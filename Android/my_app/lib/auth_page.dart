@@ -31,12 +31,10 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final LocalAuthentication _localAuth = LocalAuthentication();
+ final LocalAuthentication _localAuth = LocalAuthentication();
   bool _canCheckFingerprint = false;
   String _authorized = 'Not Authorized';
-  String _ipAddress='';
-  final _controller = TextEditingController();
-  
+  late String serverIp;
 
   @override
   void initState() {
@@ -57,15 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _authenticate() async {
-    _controller.text = "";
-    _controller.addListener(() {
-    final text = _controller.text;
-    _controller.value = _controller.value.copyWith(
-        text: RegExp(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$|^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$')
-            .stringMatch(text) ??
-        '');
-  });
+ void _authenticate() async {
     bool authenticated = false;
     try {
       authenticated = await _localAuth.authenticate(
@@ -80,18 +70,28 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     if (authenticated) {
-      // Send message to Python script over local WiFi
-      // Replace IP_ADDRESS and PORT with the actual IP address and port of the machine running the Python script
-      // Send message to Python script over local WiFi
-      RawDatagramSocket.bind(InternetAddress.anyIPv4, 0)
-          .then((RawDatagramSocket socket) {
-        List<int> message = utf8.encode('Hello from Flutter!');
-        socket.send(message, InternetAddress(_ipAddress), 8000);
-      });
+      try {
+          // create a socket connection to the network
+          RawDatagramSocket.bind(InternetAddress.anyIPv4, 0)
+            .then((RawDatagramSocket socket) {
+              List<int> message = utf8.encode('unlock');
+              socket.broadcastEnabled = true;
+              // Send message to broadcast IP
+              socket.send(message, InternetAddress('255.255.255.255'), 8000);
+              // wait for a response
+              // socket.listen((RawSocketEvent event) {
+              //   if (event == RawSocketEvent.read) {
+              //     Datagram? d = socket.receive();
+              //     serverIp = utf8.decode(d!.data);
+              //     print('Server IP is: $serverIp');
+              //   }
+              // });
+            });
+        } catch (e) {
+          print(e);
+        }
     }
   }
-  
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,38 +120,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
               SizedBox(height:20),
-              Padding(
-                padding: EdgeInsets.all(16),
-                child: SizedBox(
-                  width: 300,
-                  child: TextField(
-                    style: TextStyle(fontSize: 19.0),
-                    controller: _controller,
-                    decoration: InputDecoration(
-                      hintText: 'IP Address',
-                      labelText: 'IP Address',
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        borderSide: BorderSide(
-                          color: Colors.teal,
-                          width: 2.0,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        borderSide: BorderSide(
-                          color: Colors.teal,
-                          width: 3.0,
-                        ),
-                      ),
-                    ),
-                    onChanged: (value) {
-                      // Store the IP address entered by the user
-                      _ipAddress = value;
-                    },
-                  ),
-                ),
-              ),
               ElevatedButton(
                 onPressed: _canCheckFingerprint ? _authenticate : null,
                 child: Column(
