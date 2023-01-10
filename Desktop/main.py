@@ -1,7 +1,7 @@
 import socket
 import os
 
-IP_ADDRESS = '192.168.1.7'
+IP_ADDRESS = '192.168.1.9'
 PORT = 8000
 
 # Create a UDP socket

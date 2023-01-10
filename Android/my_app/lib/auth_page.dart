@@ -13,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Fingerprint Scanner',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.teal,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       home: MyHomePage(title: 'Fingerprint Scanner'),
@@ -34,6 +34,9 @@ class _MyHomePageState extends State<MyHomePage> {
   final LocalAuthentication _localAuth = LocalAuthentication();
   bool _canCheckFingerprint = false;
   String _authorized = 'Not Authorized';
+  String _ipAddress='';
+  final _controller = TextEditingController();
+  
 
   @override
   void initState() {
@@ -55,6 +58,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _authenticate() async {
+    _controller.text = "";
+    _controller.addListener(() {
+    final text = _controller.text;
+    _controller.value = _controller.value.copyWith(
+        text: RegExp(r'^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$|^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$')
+            .stringMatch(text) ??
+        '');
+  });
     bool authenticated = false;
     try {
       authenticated = await _localAuth.authenticate(
@@ -71,32 +82,88 @@ class _MyHomePageState extends State<MyHomePage> {
     if (authenticated) {
       // Send message to Python script over local WiFi
       // Replace IP_ADDRESS and PORT with the actual IP address and port of the machine running the Python script
-       // Send message to Python script over local WiFi
-            RawDatagramSocket.bind(InternetAddress.anyIPv4, 0)
-                .then((RawDatagramSocket socket) {
-              List<int> message = utf8.encode('Hello from Flutter!');
-              socket.send(message, InternetAddress('192.168.1.7'), 8000);
-            });
+      // Send message to Python script over local WiFi
+      RawDatagramSocket.bind(InternetAddress.anyIPv4, 0)
+          .then((RawDatagramSocket socket) {
+        List<int> message = utf8.encode('Hello from Flutter!');
+        socket.send(message, InternetAddress(_ipAddress), 8000);
+      });
     }
   }
+  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text(widget.title),
-        ),
-        body: Center(
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
+      backgroundColor: Colors.,
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Container(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              SizedBox(height:20),
+              Icon(
+                Icons.fingerprint,
+                color: _authorized == 'Authorized' ? Colors.green : Colors.red,
+                size: 100.0,
+              ),
+              SizedBox(height:50),
               Text(
                 'You are $_authorized',
-                style: TextStyle(fontSize: 32),
+                style: TextStyle(
+                fontSize: 25,
+                color: Colors.grey[800],
+                fontWeight: FontWeight.bold
+                ),
+              ),
+              SizedBox(height:20),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: SizedBox(
+                  width: 300,
+                  child: TextField(
+                    style: TextStyle(fontSize: 19.0),
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: 'IP Address',
+                      labelText: 'IP Address',
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        borderSide: BorderSide(
+                          color: Colors.teal,
+                          width: 2.0,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                        borderSide: BorderSide(
+                          color: Colors.teal,
+                          width: 3.0,
+                        ),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      // Store the IP address entered by the user
+                      _ipAddress = value;
+                    },
+                  ),
+                ),
               ),
               ElevatedButton(
                 onPressed: _canCheckFingerprint ? _authenticate : null,
-                child: Text('Authenticate'),
-              )
-            ])));
+                child: Column(
+                    children: [
+                      Text('Authenticate')
+                    ],
+                  ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

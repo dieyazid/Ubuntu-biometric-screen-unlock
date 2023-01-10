@@ -8,9 +8,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-
 import 'package:my_app/auth_page.dart';
 
 void main() {
+  debugShowCheckedModeBanner:false;
   runApp(MyApp());
 }
